@@ -41,29 +41,28 @@ Merksatz: `expose` macht einen Port **nur im Docker-Netz** sichtbar, `ports` ver
 
 ```mermaid
 flowchart TB
-  browser["Browser<br/><small>React-App</small>"]
-  fx["JavaFX-Client<br/><small>läuft auf dem Host</small>"]
+  browser["Browser<br/>React-App"]
+  fx["JavaFX-Client<br/>läuft auf dem Host"]
 
   subgraph net["Docker-Netzwerk chat-net – von aussen nicht erreichbar"]
     direction TB
-    gw["gateway · nginx<br/><small>einziger offener Port 8080</small>"]
-    chat["chat-service<br/><small>REST · SSE · JWT-Prüfung</small>"]
-    batch["batch-service<br/><small>einziger Schreiber</small>"]
-    bot["bot-service<br/><small>Erweiterung</small>"]
-    kc["keycloak<br/><small>Login / OIDC</small>"]
-    mq["rabbitmq<br/><small>Fanout-Exchange chat.messages</small>"]
-    db[("postgres<br/><small>Nachrichten, Räume</small>")]
+    gw["gateway · nginx<br/>einziger offener Port 8080"]
+    chat["chat-service<br/>REST · SSE · JWT-Prüfung"]
+    mq["rabbitmq<br/>Fanout-Exchange chat.messages"]
+    batch["batch-service<br/>einziger Schreiber"]
+    bot["bot-service<br/>Erweiterung"]
+    db[("postgres<br/>Nachrichten, Räume")]
+    kc["keycloak<br/>Login / OIDC"]
 
     gw -->|"/api · /stream"| chat
-    gw -->|"/auth"| kc
-    chat -->|"Token prüfen (JWKS)"| kc
-    chat -->|"publish"| mq
-    chat -.->|"Verlauf LESEN"| db
-    mq -.->|"Queue chat.live.&lt;instanz&gt; → SSE"| chat
+    chat <-->|"publish ↓<br/>↑ Queue chat.live.X → SSE"| mq
     mq -->|"Queue chat.persist"| batch
     mq -.->|"Queue chat.bot"| bot
     bot -->|"POST /api/messages"| chat
     batch ==>|"Batch-INSERT 500 Zeilen"| db
+    chat -.->|"Verlauf lesen"| db
+    gw -->|"/auth"| kc
+    chat -->|"Token prüfen"| kc
   end
 
   browser -->|"localhost:8080"| gw
@@ -137,7 +136,7 @@ sequenceDiagram
 
   C->>G: POST /api/messages + Bearer-Token
   G->>S: weiterleiten
-  S->>S: Token prüfen, Mitglied?, UUID + Zeitstempel
+  S->>S: Token + Mitgliedschaft prüfen,<br/>UUID + Zeitstempel setzen
   S->>MQ: publish auf Exchange chat.messages
   S-->>C: 202 Accepted
   Note over MQ: Fanout: je Queue eine Kopie
