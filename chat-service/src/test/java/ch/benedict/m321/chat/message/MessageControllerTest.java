@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -14,6 +15,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,5 +50,49 @@ class MessageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].sender").value("lehrperson"))
                 .andExpect(jsonPath("$[0].text").value("Willkommen im Raum Allgemein."));
+    }
+
+    @Test
+    void sendAcceptsMessageAndReturns202() throws Exception {
+        Message created = new Message(
+                UUID.fromString("bbbbbbbb-0000-0000-0000-000000000001"),
+                ROOM_ID,
+                "lernende1",
+                "Hallo zusammen",
+                Instant.parse("2026-09-04T08:05:00Z"));
+        when(messageService.sendMessage(any())).thenReturn(created);
+
+        String body = """
+                {
+                  "roomId": "11111111-1111-1111-1111-111111111111",
+                  "sender": "lernende1",
+                  "text": "Hallo zusammen"
+                }
+                """;
+
+        // 202 Accepted heisst: angenommen und weitergegeben - aber noch nicht gespeichert.
+        // Genau das ist bei uns der Fall, denn schreiben wird spaeter der batch-service.
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.id").value("bbbbbbbb-0000-0000-0000-000000000001"))
+                .andExpect(jsonPath("$.text").value("Hallo zusammen"));
+    }
+
+    @Test
+    void sendRejectsBlankText() throws Exception {
+        String body = """
+                {
+                  "roomId": "11111111-1111-1111-1111-111111111111",
+                  "sender": "lernende1",
+                  "text": "   "
+                }
+                """;
+
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
     }
 }
