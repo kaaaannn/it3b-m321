@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: chat-service
+
+# Swagger UI liegt unter http://localhost:8080/swagger-ui.html
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    # Endpunkte nach Reihenfolge im Controller sortieren statt alphabetisch
+    operations-sorter: method
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    # Im Unterricht wollen wir jeden Schritt sehen.
+    ch.benedict.m321: DEBUG
