@@ -5,6 +5,19 @@ spring:
   application:
     name: chat-service
 
+  # Verbindung zur Datenbank aus docker-compose.
+  # Zugangsdaten stehen hier im Klartext, weil das eine Uebungsumgebung ist.
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chat
+    username: chat
+    password: chat
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: chat
+    password: chat
+
 # Swagger UI liegt unter http://localhost:8080/swagger-ui.html
 springdoc:
   swagger-ui:

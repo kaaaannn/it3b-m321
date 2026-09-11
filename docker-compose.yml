@@ -1,0 +1,42 @@
+# Infrastruktur fuer den Bootstrap: Datenbank und Message Broker.
+# Der chat-service laeuft in dieser Phase noch auf dem Host (aus der IDE).
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: m321-postgres
+    environment:
+      POSTGRES_DB: chat
+      POSTGRES_USER: chat
+      POSTGRES_PASSWORD: chat
+    ports:
+      # NUR fuer den Bootstrap veroeffentlicht - siehe Hinweis im Plan.
+      - "5432:5432"
+    volumes:
+      # Alle .sql-Dateien hier drin fuehrt das Postgres-Image beim ERSTEN Start
+      # in alphabetischer Reihenfolge aus. Danach nie wieder.
+      - ./db:/docker-entrypoint-initdb.d:ro
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - chat-net
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: m321-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: chat
+      RABBITMQ_DEFAULT_PASS: chat
+    ports:
+      # NUR fuer den Bootstrap veroeffentlicht - siehe Hinweis im Plan.
+      - "5672:5672"
+      # Management-Oberflaeche: http://localhost:15672 (chat / chat)
+      - "15672:15672"
+    networks:
+      - chat-net
+
+volumes:
+  postgres-data:
+
+networks:
+  chat-net:
+    driver: bridge
