@@ -5,18 +5,22 @@ spring:
   application:
     name: chat-service
 
-  # Verbindung zur Datenbank aus docker-compose.
-  # Zugangsdaten stehen hier im Klartext, weil das eine Uebungsumgebung ist.
+  # Verbindung zur Datenbank. "postgres" ist KEIN Rechnername, sondern der Dienstname aus
+  # docker-compose.yml - den loest der interne DNS von Docker auf. Die Zugangsdaten
+  # kommen aus der Umgebung, also aus der .env.
+  #
+  # Wer den Dienst zum Ausprobieren auf dem Rechner statt im Stack startet, setzt
+  # SPRING_DATASOURCE_URL und SPRING_RABBITMQ_HOST als Umgebungsvariablen.
   datasource:
-    url: jdbc:postgresql://localhost:5432/chat
-    username: chat
-    password: chat
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:chat}
+    username: ${POSTGRES_USER:chat}
+    password: ${POSTGRES_PASSWORD:chat}
 
   rabbitmq:
-    host: localhost
+    host: rabbitmq
     port: 5672
-    username: chat
-    password: chat
+    username: ${RABBITMQ_DEFAULT_USER:chat}
+    password: ${RABBITMQ_DEFAULT_PASS:chat}
 
 # Swagger UI liegt unter http://localhost:8080/swagger-ui.html
 springdoc:

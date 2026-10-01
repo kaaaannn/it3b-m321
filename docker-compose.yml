@@ -1,22 +1,40 @@
-# Infrastruktur fuer den Bootstrap: Datenbank und Message Broker.
-# Der chat-service laeuft in dieser Phase noch auf dem Host (aus der IDE).
+# Der ganze Stack der Chat-App: Datenbank, Broker und die zwei eigenen Dienste.
+#
+# Grundregel aus PLANUNG.md: ALLES laeuft im internen Netz chat-net, und KEIN Dienst
+# veroeffentlicht einen Port auf dem Rechner. Darum steht hier nirgends "ports", sondern
+# ueberall "expose".
+#
+# Der Unterschied in einem Satz: "expose" macht einen Port nur im Docker-Netz sichtbar,
+# "ports" veroeffentlicht ihn auf dem Rechner. Gemessen wird deshalb von innen, also mit
+# "docker compose exec".
+#
+# Alle Zugangsdaten kommen aus der Datei .env. Die Vorlage dafuer ist .env.example:
+#   cp .env.example .env
+
 services:
 
   postgres:
     image: postgres:17-alpine
     container_name: m321-postgres
     environment:
-      POSTGRES_DB: chat
-      POSTGRES_USER: chat
-      POSTGRES_PASSWORD: chat
-    ports:
-      # NUR fuer den Bootstrap veroeffentlicht - siehe Hinweis im Plan.
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    expose:
+      - "5432"
     volumes:
-      # Alle .sql-Dateien hier drin fuehrt das Postgres-Image beim ERSTEN Start
-      # in alphabetischer Reihenfolge aus. Danach nie wieder.
+      # Alle .sql-Dateien hier drin fuehrt das Postgres-Abbild beim ERSTEN Start in
+      # alphabetischer Reihenfolge aus. Danach nie wieder. Angelegt werden nur room und
+      # room_member - die Tabelle message legt der batch-writer selbst an.
       - ./db:/docker-entrypoint-initdb.d:ro
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Ohne diese Pruefung gilt der Container schon als bereit, wenn der Prozess laeuft.
+      # Postgres braucht danach aber noch ein paar Sekunden, bis es Anfragen annimmt.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     networks:
       - chat-net
 
@@ -24,13 +42,70 @@ services:
     image: rabbitmq:4-management-alpine
     container_name: m321-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: chat
-      RABBITMQ_DEFAULT_PASS: chat
-    ports:
-      # NUR fuer den Bootstrap veroeffentlicht - siehe Hinweis im Plan.
-      - "5672:5672"
-      # Management-Oberflaeche: http://localhost:15672 (chat / chat)
-      - "15672:15672"
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    expose:
+      # Der Broker selbst.
+      - "5672"
+      # Die Management-Oberflaeche. Auch sie ist NICHT veroeffentlicht: wer sie im
+      # Unterricht sehen will, braucht eine bewusste Ausnahme oder einen Weg ueber das
+      # Gateway (PLANUNG.md, offener Punkt 6).
+      - "15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    networks:
+      - chat-net
+
+  chat-service:
+    build:
+      # Bau-Kontext ist das Wurzelverzeichnis, damit der Eltern-POM mitkommt.
+      context: .
+      dockerfile: chat-service/Dockerfile
+    container_name: m321-chat-service
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    expose:
+      - "8080"
+    depends_on:
+      # service_healthy heisst: warte, bis die Pruefung oben erfolgreich ist, nicht nur
+      # bis der Container existiert.
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - chat-net
+
+  batch-writer:
+    build:
+      context: .
+      dockerfile: batch-writer/Dockerfile
+    # ABSICHTLICH ohne container_name: ein fester Name laesst sich nicht vervielfachen.
+    # Mit "docker compose up -d --scale batch-writer=2" laufen zwei Instanzen, und beide
+    # haengen an derselben Queue chat.persist. RabbitMQ gibt jede Nachricht dann an genau
+    # EINE der beiden - so teilen sie sich die Arbeit, statt sie zu verdoppeln.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      BATCH_WRITER_BATCH_SIZE: ${BATCH_WRITER_BATCH_SIZE}
+      BATCH_WRITER_BATCH_TIMEOUT_MS: ${BATCH_WRITER_BATCH_TIMEOUT_MS}
+      BATCH_WRITER_RETRY_BACKOFF_MS: ${BATCH_WRITER_RETRY_BACKOFF_MS}
+    # Kein expose und kein ports: dieser Dienst hat keine Schnittstelle.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - chat-net
 
