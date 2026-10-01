@@ -292,6 +292,10 @@ Reihenfolge entlang des Bootstrap-Plans der Referenz, ergänzt um unsere Teile:
 2. `chat-service` Bootstrap (4 Tasks): Projekt + Swagger, docker-compose mit PostgreSQL + RabbitMQ,
    `GET /api/messages`, `POST /api/messages` publiziert auf den Fanout-Exchange.
 3. `batch-service`: Consumer auf `chat.persist`, **zuerst einzeln schreiben**, dann bündeln und messen.
+   *Umgesetzt* unter dem Namen **`batch-writer`**, wie es der Auftrag der ersten Bewertung verlangt.
+   Spezifikation: [`docs/spec-batch-writer.md`](docs/spec-batch-writer.md), Plan:
+   [`docs/plan-batch-writer.md`](docs/plan-batch-writer.md). Gebündelt wird von Anfang an, weil
+   Szenario S4 des Auftrags für tausend Nachrichten höchstens hundert Transaktionen erlaubt.
 4. Raumverwaltung: Tabellen, drei Endpunkte, Mitgliedsprüfung.
 5. Keycloak: Realm-Import, Token-Prüfung, `sender` aus dem Token.
 6. SSE: `GET /stream`, Live-Queue je Instanz.
