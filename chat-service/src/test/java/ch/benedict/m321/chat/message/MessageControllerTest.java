@@ -81,6 +81,48 @@ class MessageControllerTest {
     }
 
     @Test
+    void sendAlsoWorksOnTheShortPath() throws Exception {
+        // Der Auftrag der Bewertung spricht von POST /messages, unsere Planung von
+        // POST /api/messages. Beide Adressen fuehren auf dieselbe Methode.
+        Message created = new Message(
+                UUID.fromString("bbbbbbbb-0000-0000-0000-000000000002"),
+                ROOM_ID,
+                "lernende1",
+                "Auf dem kurzen Pfad",
+                Instant.parse("2026-09-04T08:06:00Z"));
+        when(messageService.sendMessage(any())).thenReturn(created);
+
+        String body = """
+                {
+                  "roomId": "11111111-1111-1111-1111-111111111111",
+                  "sender": "lernende1",
+                  "text": "Auf dem kurzen Pfad"
+                }
+                """;
+
+        mockMvc.perform(post("/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.text").value("Auf dem kurzen Pfad"));
+    }
+
+    @Test
+    void historyAlsoWorksOnTheShortPath() throws Exception {
+        Message example = new Message(
+                UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"),
+                ROOM_ID,
+                "lehrperson",
+                "Willkommen im Raum Allgemein.",
+                Instant.parse("2026-09-04T08:00:00Z"));
+        when(messageService.loadHistory(any(), anyInt())).thenReturn(List.of(example));
+
+        mockMvc.perform(get("/messages").param("roomId", ROOM_ID.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sender").value("lehrperson"));
+    }
+
+    @Test
     void sendRejectsBlankText() throws Exception {
         String body = """
                 {
