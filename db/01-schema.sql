@@ -1,5 +1,12 @@
 -- Schema der Chat-App (Modul M321).
--- Wird vom Postgres-Image beim ERSTEN Start automatisch ausgefuehrt.
+-- Wird vom Postgres-Image beim ERSTEN Start automatisch ausgefuehrt, in alphabetischer
+-- Reihenfolge der Dateinamen. Danach nie wieder.
+--
+-- Achtung, hier fehlt die Tabelle message mit Absicht.
+-- Sie gehoert dem batch-writer, weil er ihr einziger Schreiber ist, und er legt sie
+-- bei jedem Start selbst an (siehe docs/spec-batch-writer.md, Abschnitt 4.2).
+-- Grund: Init-Skripte laufen nur auf einem leeren Volume. Liegt schon ein Volume von
+-- frueher, laeuft kein Skript mehr, und die Tabelle fehlte stillschweigend.
 
 CREATE TABLE room (
     id         UUID         PRIMARY KEY,
@@ -17,19 +24,3 @@ CREATE TABLE room_member (
     joined_at  TIMESTAMPTZ  NOT NULL,
     PRIMARY KEY (room_id, username)
 );
-
-CREATE TABLE message (
-    -- Die ID kommt vom chat-service, NICHT von der Datenbank. Nur so kann der
-    -- batch-service ein Paket gefahrlos wiederholen (ON CONFLICT DO NOTHING).
-    id       UUID         PRIMARY KEY,
-    room_id  UUID         NOT NULL REFERENCES room (id),
-    sender   VARCHAR(100) NOT NULL,
-    text     TEXT         NOT NULL,
-    -- Zeitpunkt des SENDENS, gesetzt vom chat-service. Absichtlich kein DEFAULT now():
-    -- sonst haetten alle 500 Nachrichten eines Pakets dieselbe Zeit.
-    sent_at  TIMESTAMPTZ  NOT NULL
-);
-
--- Der Verlauf wird immer pro Raum und nach Zeit sortiert gelesen.
--- Genau dafuer ist dieser Index da.
-CREATE INDEX idx_message_room_time ON message (room_id, sent_at DESC);
