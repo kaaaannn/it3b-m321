@@ -33,5 +33,6 @@
          "mvn clean test" hier im Wurzelverzeichnis baut und testet sie der Reihe nach. -->
     <modules>
         <module>chat-service</module>
+        <module>batch-writer</module>
     </modules>
 </project>

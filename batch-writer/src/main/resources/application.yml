@@ -1,0 +1,36 @@
+# Konfiguration des batch-writer.
+#
+# Die Werte in ${...} kommen aus der Umgebung, also aus der .env ueber docker-compose.
+# Was hinter dem Doppelpunkt steht, ist der Standardwert, falls die Variable fehlt.
+
+spring:
+  application:
+    name: batch-writer
+
+  # Die Adressen der Nachbarn sind KEINE Variablen, sondern die Dienstnamen aus
+  # docker-compose.yml. Den Namen loest der interne DNS von Docker auf.
+  #
+  # reWriteBatchedInserts=true erlaubt dem Treiber, aus vielen gleichen INSERTs eine
+  # einzige Anweisung mit vielen Zeilen zu machen. Genau darum geht es in diesem Dienst.
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:chat}?reWriteBatchedInserts=true
+    username: ${POSTGRES_USER:chat}
+    password: ${POSTGRES_PASSWORD:chat}
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: ${RABBITMQ_DEFAULT_USER:chat}
+    password: ${RABBITMQ_DEFAULT_PASS:chat}
+
+# Eigene Einstellungen dieses Dienstes. Die drei Werte steuern die Buendelung und das
+# Verhalten bei einem Datenbankausfall (siehe docs/spec-batch-writer.md, 3.1 und 3.3).
+batch-writer:
+  batch-size: ${BATCH_WRITER_BATCH_SIZE:500}
+  batch-timeout-ms: ${BATCH_WRITER_BATCH_TIMEOUT_MS:200}
+  retry-backoff-ms: ${BATCH_WRITER_RETRY_BACKOFF_MS:5000}
+
+logging:
+  level:
+    # Im Unterricht wollen wir jeden Schritt sehen.
+    ch.benedict.m321: DEBUG

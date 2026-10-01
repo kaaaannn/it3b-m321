@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Unser eigener Eltern-POM im Wurzelverzeichnis. Er gibt die Versionen vor. -->
+    <parent>
+        <groupId>ch.benedict.m321</groupId>
+        <artifactId>chat-app</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>batch-writer</artifactId>
+    <name>batch-writer</name>
+    <description>Schreibt Nachrichten aus der Queue chat.persist gebuendelt in PostgreSQL (Modul M321)</description>
+
+    <dependencies>
+        <!-- Nur der Kern von Spring Boot, ABSICHTLICH ohne -web: dieser Dienst hat keine
+             Weboberflaeche, keinen Endpunkt und keinen offenen Port. Er hoert nur auf die
+             Queue. Am Leben halten ihn die Hoer-Threads von Spring AMQP. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Jackson: wandelt den JSON-Rumpf einer Nachricht in ein Java-Objekt.
+             Steckt sonst im Web-Starter, den wir hier nicht haben, also einzeln dazu. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-json</artifactId>
+        </dependency>
+
+        <!-- JdbcTemplate: SQL direkt, ohne ORM. Wir sehen jede Abfrage im Klartext. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
+        <!-- Treiber fuer PostgreSQL. Wird nur zur Laufzeit gebraucht, nicht beim Kompilieren. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Spring AMQP: die Anbindung an RabbitMQ (Queue, Bindung, Pakete, Bestaetigung). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers startet fuer die Tests eine ECHTE Datenbank und einen ECHTEN
+             Broker in Containern, auf zufaelligen Ports, und raeumt sie danach weg.
+             Deshalb braucht "mvn clean test" keinen laufenden Stack und keinen offenen
+             Port auf dem Host (Szenarien S1 und S2). -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>rabbitmq</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Baut ein ausfuehrbares JAR, das im Dockerfile gestartet wird. -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
