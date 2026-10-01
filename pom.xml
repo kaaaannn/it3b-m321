@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Der Spring-Boot-Eltern-POM legt die Versionen aller Spring-Bibliotheken fest.
+         Weil unser Eltern-POM hier von ihm erbt, gilt das auch fuer jedes Modul darunter.
+         Deshalb steht in den Modulen bei fast keiner Abhaengigkeit eine Versionsnummer. -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.16</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>ch.benedict.m321</groupId>
+    <artifactId>chat-app</artifactId>
+    <version>0.1.0</version>
+    <!-- "pom" heisst: dieses Projekt enthaelt selbst keinen Code, es fasst nur Module zusammen. -->
+    <packaging>pom</packaging>
+    <name>chat-app</name>
+    <description>Chat-App des Moduls M321: alle Dienste unter einem Dach</description>
+
+    <!-- Hier stehen die Versionen und Einstellungen, die fuer ALLE Module gelten sollen.
+         Aendert sich die Java-Version, aendert sie sich an genau einer Stelle. -->
+    <properties>
+        <java.version>21</java.version>
+        <springdoc.version>2.9.0</springdoc.version>
+    </properties>
+
+    <!-- Jedes Modul ist ein eigener Dienst mit eigenem Dockerfile und eigenem Lebenslauf.
+         "mvn clean test" hier im Wurzelverzeichnis baut und testet sie der Reihe nach. -->
+    <modules>
+        <module>chat-service</module>
+    </modules>
+</project>

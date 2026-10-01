@@ -15,5 +15,5 @@ out/
 # Claude-App
 Claude outputs/
 
-# Claude-App
-Claude outputs/
+# Umgebungsdatei mit Zugangsdaten. Nur .env.example gehoert ins Repo.
+.env
