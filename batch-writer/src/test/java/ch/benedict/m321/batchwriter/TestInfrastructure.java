@@ -65,6 +65,6 @@ final class TestInfrastructure {
         if (url.contains("?")) {
             separator = "&";
         }
-        return url + separator + "reWriteBatchedInserts=true";
+        return url + separator + "reWriteBatchedInserts=true&socketTimeout=10";
     }
 }

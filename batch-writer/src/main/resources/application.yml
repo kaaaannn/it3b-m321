@@ -13,9 +13,20 @@ spring:
   # reWriteBatchedInserts=true erlaubt dem Treiber, aus vielen gleichen INSERTs eine
   # einzige Anweisung mit vielen Zeilen zu machen. Genau darum geht es in diesem Dienst.
   datasource:
-    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:chat}?reWriteBatchedInserts=true
+    # socketTimeout=10 heisst: eine laufende Abfrage gibt nach zehn Sekunden auf.
+    # Ohne diese Grenze haengt eine Abfrage ewig, wenn die Datenbank mitten in der
+    # Antwort stehen bleibt - der Dienst waere dann fuer immer blockiert, obwohl die
+    # Datenbank spaeter zurueckkommt. Ein Paket zu schreiben dauert Millisekunden,
+    # zehn Sekunden sind also reichlich.
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:chat}?reWriteBatchedInserts=true&socketTimeout=10
     username: ${POSTGRES_USER:chat}
     password: ${POSTGRES_PASSWORD:chat}
+    hikari:
+      # Wie lange hoechstens auf eine freie Verbindung gewartet wird. Der Standard waere
+      # eine halbe Minute. So lange soll der Hoer-Thread bei einem Ausfall nicht haengen:
+      # wir wollen schnell merken, dass die Datenbank weg ist, und dann unsere eigene
+      # Pause einlegen (siehe MessageBatchListener).
+      connection-timeout: 5000
 
   rabbitmq:
     host: rabbitmq
