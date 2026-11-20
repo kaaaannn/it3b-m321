@@ -82,7 +82,20 @@ nicht und bleibt unverändert.
 
 **Commit:** `feat(chat-service): eigene Live-Queue je Instanz, Nachrichten gehen an die offenen Streams`
 
-**Geprüft und korrigiert:** _(nach dem Schritt ausfüllen)_
+**Geprüft und korrigiert:** Erster Lauf `mvn test`: Kontext startet nicht, RabbitMQ 4 lehnt die Live-Queue ab
+(«Feature transient_nonexcl_queues is deprecated»): Queues, die weder dauerhaft noch exklusiv sind, sind dort nicht
+mehr erlaubt. Korrektur: `exclusive=true` statt `false` (Planänderung im eigenen Commit davor); `durable=false` und
+`autoDelete=true` bleiben wie in der Spezifikation. Zweiter Lauf: 2 rot im `LiveMessageListenerTest`, «Cannot
+deserialize value of type byte[]». Ursache: Spring Boot setzt den JSON-Umwandler aus `RabbitConfiguration` auch beim
+Empfangen ein und versucht, das JSON selbst in `byte[]` zu verwandeln. Korrektur: eigener Hörer-Behälter
+`liveListenerContainerFactory`, der die Bytes unverändert weitergibt. Ausserdem hing der Test-Client beim Schliessen
+(`HttpURLConnection.disconnect()` wartet auf den Lese-Thread, der nie fertig wird) und der Lauf am Ende 30 s (das
+sanfte Herunterfahren von Spring Boot wartet auf offene Streams). Korrektur: Test-Client über einen `Socket`, im Test
+`server.shutdown=immediate`. Letzter Lauf: 12 Tests grün. Zusätzlich zum Auftrag: Nachrichten ohne `id`/`roomId`
+werden verworfen, mit eigenem Test für eine unlesbare Nachricht; die zwei Umgebungsvariablen werden in
+`docker-compose.yml` durchgereicht. Von Hand im Stack: `docker compose ps` ohne `0.0.0.0:`, Stream geöffnet, `POST
+/messages` → Ereignis mit derselben `id` erscheint sofort; `list_queues` zeigt `chat.live.…` mit 1 Consumer,
+`durable false`, `exclusive true`, `auto_delete true`. Test ist unverändert geblieben.
 
 ---
 

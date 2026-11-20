@@ -64,13 +64,18 @@ services:
       # Bau-Kontext ist das Wurzelverzeichnis, damit der Eltern-POM mitkommt.
       context: .
       dockerfile: chat-service/Dockerfile
-    container_name: m321-chat-service
+    # ABSICHTLICH ohne container_name: ein fester Name laesst sich nicht vervielfachen.
+    # Mit "docker compose up -d --scale chat-service=2" laufen zwei Instanzen. Anders als
+    # beim batch-writer teilen sie sich KEINE Queue: jede legt beim Start ihre eigene
+    # Live-Queue chat.live.<zufaellige ID> an und bekommt so jede Nachricht (Szenario S3).
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      LIVE_QUEUE_MAX_LENGTH: ${LIVE_QUEUE_MAX_LENGTH}
+      LIVE_QUEUE_TTL_MS: ${LIVE_QUEUE_TTL_MS}
     expose:
       - "8080"
     depends_on:

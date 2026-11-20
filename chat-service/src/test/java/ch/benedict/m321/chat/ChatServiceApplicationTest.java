@@ -2,6 +2,8 @@ package ch.benedict.m321.chat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * Prueft, dass Spring alle Klassen zusammenbauen kann. Der Test hat absichtlich keinen
@@ -10,6 +12,17 @@ import org.springframework.boot.test.context.SpringBootTest;
  */
 @SpringBootTest
 class ChatServiceApplicationTest {
+
+    /**
+     * Gibt Spring die Adressen der Testcontainer, bevor der Kontext startet.
+     * Ohne das wuerde der Dienst die Namen "postgres" und "rabbitmq" aus der
+     * application.yml verwenden, die es nur im Docker-Netz gibt - und der Hoer-Thread
+     * der Live-Queue faende keinen Broker.
+     */
+    @DynamicPropertySource
+    static void useTestContainers(DynamicPropertyRegistry registry) {
+        TestInfrastructure.registerProperties(registry);
+    }
 
     @Test
     void contextLoads() {
