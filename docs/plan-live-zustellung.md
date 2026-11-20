@@ -187,7 +187,29 @@ Szenarien A3 bis A7 aus der Spezifikation einmal von Hand durchspielen.
 
 **Danach:** `git tag bewertung-2 && git push origin main --tags`
 
-**Geprüft und korrigiert:** _(nach dem Schritt ausfüllen)_
+**Geprüft und korrigiert:** `docker-compose.yml` geprüft: chat-service ohne `container_name`, nur `expose`, alle drei
+`LIVE_*`-Variablen durchgereicht, nirgends `ports:`. README ergänzt (Stand, Umgebungsvariablen, `curl -N` mit und
+ohne `Last-Event-ID`, `--index` bei zwei Instanzen, Links auf Spezifikation und Plan). A8: grep auf `.stream()`,
+`.map(`, `Collectors.` leer, `.env` nicht im Repo; drei Konstruktoren ohne Kommentar gefunden
+(`MessageController`, `MessageService`, `StreamController`), im eigenen Commit davor ergänzt. Von Hand im Stack,
+20.11.2026:
+- **A2:** alle Dienste laufen, kein `0.0.0.0:`.
+- **A3:** zwei Instanzen, je ein Stream Raum A pro Instanz, einer Raum B; je 200 `POST` über jede Instanz → beide
+  A-Streams 400 Ereignisse, 400 verschiedene IDs, pro Absender in Sendereihenfolge; B-Stream 0.
+- **A4:** vorher zwei `chat.live.*` mit je 1 Consumer, 4 s nach `--scale chat-service=1` nur noch eine (wegen
+  `exclusive=true` sofort, nicht erst nach 30 s); `chat.persist` und `chat.dlq` geblieben.
+- **A5:** `batch-writer` und `postgres` gestoppt, 100 × `POST` → 100 × 202, Stream sofort 100 Ereignisse,
+  `chat.persist` hält 100; nach dem Start `SELECT count(*)` von 5460 auf 5560.
+- **A6:** Instanz 2 pausiert, 5000 × `POST` über Instanz 1 in 27 s → Stream an Instanz 1 alle 5000. Die Spalte
+  `messages` der pausierten Queue stieg auf **1250, nicht 1000**. Ursache: `x-max-length` zählt nur bereitliegende
+  Nachrichten; dazu kamen 250 unbestätigte, die sich die Instanz vor der Pause schon abgeholt hatte (Prefetch 250,
+  Standard von Spring). Getrennt gemessen: `messages_ready` nie über 1000, `messages_unacknowledged` 250. Nach 30 s
+  verfielen die bereitliegenden (TTL), es blieben die 250 unbestätigten. Entscheid: dokumentieren, Code bleibt –
+  auch ein Prefetch von 1 ergäbe noch 1001. Nach `docker unpause` beide Queues 0 Nachrichten und 1 Consumer, eine
+  neue Nachricht kam an Instanz 2 sofort an.
+- **A7:** siehe Schritt 3.
+Beim Durchspielen war der Stack einmal ganz beendet (alle Container Exit 255, Docker Desktop neu gestartet), mit
+`docker compose up -d` wieder hochgefahren – kein Fehler im Code.
 
 ---
 
