@@ -56,7 +56,7 @@ alle an dieser einen Queue-Definition.
 
 **Auftrag an die KI:**
 > Erweitere `rabbit/RabbitConfiguration` im chat-service: eine Bean `liveQueue()` mit Namen
-> `chat.live.` + zufällige UUID, `durable=false`, `exclusive=false`, `autoDelete=true`, Argumente `x-max-length`
+> `chat.live.` + zufällige UUID, `durable=false`, `exclusive=true`, `autoDelete=true`, Argumente `x-max-length`
 > und `x-message-ttl` aus den Einstellungen `chat-service.live-queue.max-length` (Standard 1000) und
 > `chat-service.live-queue.ttl-ms` (Standard 30000); eine `Binding` dieser Queue an `chatExchange`. Lege im Paket
 > `stream` die Klasse `LiveMessageListener` an: `@RabbitListener` auf der Live-Queue (Name über
@@ -69,6 +69,13 @@ alle an dieser einen Queue-Definition.
 > Testcontainers wie im batch-writer (`TestInfrastructure` im chat-service nachbauen): Nachricht direkt auf den
 > Exchange publizieren, ein zuvor geöffneter Stream desselben Raums bekommt genau ein Ereignis mit dieser `id`;
 > ein Stream eines anderen Raums bekommt nichts.
+
+**Änderung am Plan (20.11.2026):** `exclusive=false` → `exclusive=true`. Grund: RabbitMQ 4 (Image
+`rabbitmq:4-management-alpine`) lehnt Queues ab, die weder dauerhaft noch exklusiv sind
+(«Feature transient_nonexcl_queues is deprecated»), die Anwendung startet so nicht. `durable=false` und
+`autoDelete=true` aus der Spezifikation (Abschnitt 4) bleiben; die Queue verschwindet weiterhin, sobald die Instanz
+weg ist (S4), und bleibt auf 1000 Nachrichten / 30 Sekunden begrenzt (S6). Die Spezifikation nennt `exclusive`
+nicht und bleibt unverändert.
 
 **Test:** `mvn test` grün. Von Hand im Stack: Stream öffnen, `POST /messages`, Ereignis erscheint.
 `rabbitmqctl list_queues name consumers` zeigt `chat.live.…` mit 1 Consumer.
