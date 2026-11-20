@@ -157,7 +157,16 @@ kopieren. Test ist unverändert geblieben.
 
 **Commit:** `test(chat-service): zwei Live-Queues erhalten jede Nachricht genau einmal`
 
-**Geprüft und korrigiert:** _(nach dem Schritt ausfüllen)_
+**Geprüft und korrigiert:** Erster Lauf `mvn clean test`: `TwoInstancesTest` rot, «NOT_FOUND - no queue
+'chat.live.test-zweite-instanz'» beim Zählen. Die Streams waren richtig (beide A-Streams 20 IDs in Reihenfolge,
+B-Stream nichts). Ursache: `rabbitTemplate.receive(queue, timeout)` meldet sich für jede Nachricht kurz als
+Verbraucher an und wieder ab; weil die Queue `autoDelete` ist, hat RabbitMQ sie beim Abmelden gelöscht – genau das
+Verhalten aus S4. Korrektur: `receive(queue)` ohne Zeitlimit, das holt mit `basic.get` ohne Verbraucher-Anmeldung.
+Zweiter Lauf: `mvn clean test` im Wurzelverzeichnis in einem Lauf grün, 41 Tests (19 chat-service, 22 batch-writer).
+Gegenprobe: Bindung der zweiten Queue auskommentiert → rot («expected: 20 but was: 0»), wiederhergestellt → grün.
+Die zweite Queue übernimmt `durable`, `exclusive`, `autoDelete` und die Argumente direkt von der Bean `liveQueue`,
+damit sie sicher dieselben Eigenschaften hat. Zusätzlich zum Auftrag: Nach den 20 Ereignissen wird geprüft, dass in
+keinem A-Stream ein weiteres kommt. Test ist unverändert geblieben.
 
 ---
 
