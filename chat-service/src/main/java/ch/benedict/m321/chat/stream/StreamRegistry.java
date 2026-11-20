@@ -89,11 +89,14 @@ public class StreamRegistry {
     /**
      * Schreibt genau ein Ereignis in genau eine Verbindung. Gibt zurueck, ob es geklappt hat.
      *
+     * Oeffentlich, weil auch der StreamController diese Methode braucht: Beim Nachholen
+     * schreibt er verpasste Nachrichten im selben Format in eine neue Verbindung.
+     *
      * Eine IOException heisst hier: die Leitung zum Client ist weg. Das ist kein Fehler
      * des Dienstes, sondern Alltag bei offenen Verbindungen - deshalb nur ein Logeintrag
      * und kein Weiterwerfen.
      */
-    private boolean sendTo(SseEmitter emitter, Message message) {
+    public boolean sendTo(SseEmitter emitter, Message message) {
         try {
             SseEmitter.SseEventBuilder event = SseEmitter.event();
             event.id(message.id().toString());

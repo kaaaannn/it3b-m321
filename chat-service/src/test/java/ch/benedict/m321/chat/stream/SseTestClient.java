@@ -45,8 +45,17 @@ class SseTestClient {
      * Konstruktor zurueck, ist die Verbindung also sicher angemeldet.
      */
     SseTestClient(int port, UUID roomId) throws IOException {
+        this(port, roomId, null);
+    }
+
+    /**
+     * Wie oben, aber als Neuverbindung: Die Anfrage traegt die Kopfzeile Last-Event-ID,
+     * so wie ein Browser sie nach einem Abbruch von selbst mitschickt. Ist lastEventId
+     * null, fehlt die Kopfzeile.
+     */
+    SseTestClient(int port, UUID roomId, String lastEventId) throws IOException {
         socket = new Socket("localhost", port);
-        sendRequest(roomId);
+        sendRequest(roomId, lastEventId);
 
         InputStream input = socket.getInputStream();
         InputStreamReader inputReader = new InputStreamReader(input, StandardCharsets.UTF_8);
@@ -81,11 +90,15 @@ class SseTestClient {
      * "chunked"-Zerlegung schickt: dann kommen die SSE-Zeilen genau so an, wie sie im
      * Stream stehen, und koennen direkt Zeile fuer Zeile gelesen werden.
      */
-    private void sendRequest(UUID roomId) throws IOException {
+    private void sendRequest(UUID roomId, String lastEventId) throws IOException {
         String request = "GET /stream?roomId=" + roomId + " HTTP/1.0\r\n"
                 + "Host: localhost\r\n"
-                + "Accept: text/event-stream\r\n"
-                + "\r\n";
+                + "Accept: text/event-stream\r\n";
+        if (lastEventId != null) {
+            request = request + "Last-Event-ID: " + lastEventId + "\r\n";
+        }
+        // Die Leerzeile beendet die Kopfzeilen, danach erwartet der Server keine mehr.
+        request = request + "\r\n";
 
         OutputStream output = socket.getOutputStream();
         output.write(request.getBytes(StandardCharsets.UTF_8));

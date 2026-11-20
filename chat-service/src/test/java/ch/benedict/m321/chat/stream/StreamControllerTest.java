@@ -38,6 +38,10 @@ class StreamControllerTest {
     @MockitoBean
     private StreamRegistry streamRegistry;
 
+    /** Seit Schritt 3 braucht der Controller auch den Zwischenspeicher, hier ein Stellvertreter. */
+    @MockitoBean
+    private ReplayBuffer replayBuffer;
+
     /**
      * Gueltige roomId: Status 200, Content-Type text/event-stream, und die Verbindung
      * wird in der Registry angemeldet. Der Aufruf bleibt absichtlich "asynchron

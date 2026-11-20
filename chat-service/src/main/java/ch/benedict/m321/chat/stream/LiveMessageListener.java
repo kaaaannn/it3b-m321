@@ -24,15 +24,18 @@ public class LiveMessageListener {
 
     private final ObjectMapper objectMapper;
     private final StreamRegistry streamRegistry;
+    private final ReplayBuffer replayBuffer;
 
     /**
      * Spring reicht den ObjectMapper von Spring Boot herein (versteht Zeitpunkte wie
-     * "2026-11-20T08:00:00Z" und ueberliest unbekannte Felder) und die Registry mit den
-     * offenen Verbindungen.
+     * "2026-11-20T08:00:00Z" und ueberliest unbekannte Felder), die Registry mit den
+     * offenen Verbindungen und den Zwischenspeicher fuer das Nachholen.
      */
-    public LiveMessageListener(ObjectMapper objectMapper, StreamRegistry streamRegistry) {
+    public LiveMessageListener(ObjectMapper objectMapper, StreamRegistry streamRegistry,
+                               ReplayBuffer replayBuffer) {
         this.objectMapper = objectMapper;
         this.streamRegistry = streamRegistry;
+        this.replayBuffer = replayBuffer;
     }
 
     /**
@@ -61,7 +64,17 @@ public class LiveMessageListener {
         }
 
         log.debug("Live-Nachricht {} fuer Raum {} erhalten", message.id(), message.roomId());
-        streamRegistry.publish(message);
+
+        // Zuerst in den Zwischenspeicher, dann an die offenen Streams (Spezifikation 3.1,
+        // Punkt 4). Beides geschieht unter der Sperre des ReplayBuffer. Dieselbe Sperre
+        // nimmt der StreamController, waehrend er einem zurueckkehrenden Client die
+        // verpassten Nachrichten schreibt und ihn danach anmeldet. So kann keine Nachricht
+        // genau in die Luecke dazwischen fallen: Sie ist entweder schon im Nachgeholten
+        // oder kommt danach live - nie beides und nie keines.
+        synchronized (replayBuffer) {
+            replayBuffer.add(message);
+            streamRegistry.publish(message);
+        }
     }
 
     /**

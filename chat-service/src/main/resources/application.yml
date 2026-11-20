@@ -22,13 +22,15 @@ spring:
     username: ${RABBITMQ_DEFAULT_USER:chat}
     password: ${RABBITMQ_DEFAULT_PASS:chat}
 
-# Eigene Einstellungen dieses Dienstes. Die zwei Werte begrenzen die Live-Queue jeder
-# Instanz (docs/spec-live-zustellung.md, Abschnitte 3.5 und 4). Es sind Startwerte,
-# nicht gemessen: 1000 Nachrichten, 30 Sekunden.
+# Eigene Einstellungen dieses Dienstes. Die zwei live-queue-Werte begrenzen die Live-Queue
+# jeder Instanz (docs/spec-live-zustellung.md, Abschnitte 3.5 und 4), replay-buffer-size
+# ist die Zahl der Nachrichten pro Raum im Zwischenspeicher fuer das Nachholen (3.6).
+# Es sind Startwerte, nicht gemessen: 1000 Nachrichten, 30 Sekunden, 500 pro Raum.
 chat-service:
   live-queue:
     max-length: ${LIVE_QUEUE_MAX_LENGTH:1000}
     ttl-ms: ${LIVE_QUEUE_TTL_MS:30000}
+  replay-buffer-size: ${LIVE_REPLAY_BUFFER_SIZE:500}
 
 # Swagger UI liegt unter http://localhost:8080/swagger-ui.html
 springdoc:

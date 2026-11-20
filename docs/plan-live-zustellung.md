@@ -123,7 +123,19 @@ auch die Streams bedient.
 
 **Commit:** `feat(chat-service): Nachholen nach Verbindungsabbruch ueber Last-Event-ID`
 
-**Geprüft und korrigiert:** _(nach dem Schritt ausfüllen)_
+**Geprüft und korrigiert:** Erster Lauf `mvn test`: 18 Tests grün. Weil ein Test, der sofort grün ist, noch nichts
+beweist, Gegenprobe: Aufruf von `replayMissedMessages` im `StreamController` auskommentiert → `StreamReplayTest` rot
+(erwartet die 50 IDs, bekommen nichts); Aufruf wiederhergestellt → wieder grün. Beim Durchgehen eine Lücke gefunden,
+die der Test allein nicht zeigt: Kommt eine Nachricht genau zwischen dem Nachholen und dem Anmelden der Verbindung an,
+steht sie nicht im Nachgeholten und wird auch nicht live geschrieben. Korrektur: `LiveMessageListener` (add + publish)
+und `StreamController` (nachholen + register) arbeiten unter derselben Sperre `synchronized (replayBuffer)`.
+Zusätzlich zum Auftrag: `ReplayResult` als Rückgabe von `after(...)` (Liste plus Kennzeichen «unbekannt»),
+`ReplayBufferTest` (4 Tests ohne Spring), ein Test für eine unbekannte `Last-Event-ID`, `LIVE_REPLAY_BUFFER_SIZE` in
+`.env.example` und `docker-compose.yml`. Von Hand A7 im Stack: Stream geöffnet, `vor-dem-abbruch` live erhalten,
+Stream geschlossen, 50 × `POST`, Neuverbindung mit `Last-Event-ID` → genau `verpasst1` bis `verpasst50` in
+Reihenfolge, `vor-dem-abbruch` nicht doppelt, danach `wieder-live` live. Hinweis: Eine ältere `.env` ohne
+`LIVE_REPLAY_BUFFER_SIZE` gibt die Variable leer weiter, dann startet der Dienst nicht – `.env` neu aus der Vorlage
+kopieren. Test ist unverändert geblieben.
 
 ---
 
