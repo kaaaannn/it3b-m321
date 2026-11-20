@@ -45,6 +45,10 @@ public class MessageController {
 
     private final MessageService messageService;
 
+    /**
+     * Spring reicht den MessageService herein. Der Controller selbst kennt weder die
+     * Datenbank noch RabbitMQ - er gibt jede Anfrage an den Service weiter.
+     */
     public MessageController(MessageService messageService) {
         this.messageService = messageService;
     }

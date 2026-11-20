@@ -55,6 +55,10 @@ public class StreamController {
     private final StreamRegistry streamRegistry;
     private final ReplayBuffer replayBuffer;
 
+    /**
+     * Spring reicht die Registry der offenen Verbindungen herein (dort meldet der Controller
+     * jeden neuen Stream an) und den Zwischenspeicher, aus dem er beim Nachholen liest.
+     */
     public StreamController(StreamRegistry streamRegistry, ReplayBuffer replayBuffer) {
         this.streamRegistry = streamRegistry;
         this.replayBuffer = replayBuffer;

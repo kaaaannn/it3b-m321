@@ -23,6 +23,10 @@ public class MessageService {
     private final RabbitTemplate rabbitTemplate;
     private final MessageRepository messageRepository;
 
+    /**
+     * Spring reicht die zwei Werkzeuge herein: das RabbitTemplate zum Publizieren neuer
+     * Nachrichten und das Repository zum Lesen des Verlaufs aus der Datenbank.
+     */
     public MessageService(RabbitTemplate rabbitTemplate, MessageRepository messageRepository) {
         this.rabbitTemplate = rabbitTemplate;
         this.messageRepository = messageRepository;
