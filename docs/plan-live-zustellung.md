@@ -35,7 +35,13 @@ gegen ihn getestet werden, ohne dass Broker-Logik dazwischen ist.
 
 **Commit:** `feat(chat-service): GET /stream oeffnet eine SSE-Verbindung pro Raum`
 
-**Geprüft und korrigiert:** _(nach dem Schritt ausfüllen)_
+**Geprüft und korrigiert:** Erster Lauf `mvn test`: 10 Tests, 2 rot (`StreamControllerTest`, «Content type not set»).
+Ursache: Seit Spring Framework 6.2 schickt der Server die Kopfzeilen einer SSE-Antwort erst mit dem ersten Schreiben
+in den Stream – der Controller hat nur die Verbindung geöffnet, aber nichts geschrieben. Das hätte auch den
+`curl -i`-Test von Hand scheitern lassen. Korrektur: `StreamController` schreibt beim Öffnen sofort eine
+SSE-Kommentarzeile `: verbunden` (Methode `sendOpeningComment`); Kommentarzeilen sind im SSE-Format vorgesehen und
+werden vom Client überlesen. Zweiter Lauf: 10 Tests grün. Zusätzlich zum Auftrag: `onError` meldet den Emitter ebenfalls
+ab, und eine `roomId`, die keine UUID ist, wird mit eigenem Test auf 400 geprüft. Test ist unverändert geblieben.
 
 ---
 
