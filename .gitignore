@@ -12,6 +12,10 @@ out/
 # Browser-Automation
 .playwright-mcp/
 
+# grill-me: Sitzung mit Geheimnissen und lokales Protokoll, nie einchecken
+.grill/
+docs/grill-protokoll-*.md
+
 # Claude-App
 Claude outputs/
 
